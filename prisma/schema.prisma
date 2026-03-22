@@ -1,0 +1,15 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model ClassMember {
+  id          String   @id @default(nanoid())
+  image       String?
+  name        String?
+  description String?
+  createdAt   DateTime @default(now())
+}
