@@ -6,10 +6,16 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
 model ClassMember {
   id          String   @id @default(nanoid())
   image       String?
   name        String?
   description String?
+  gender      Gender?
   createdAt   DateTime @default(now())
 }

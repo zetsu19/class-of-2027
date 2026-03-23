@@ -3,10 +3,17 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { image, name, description } = await req.json();
+    const { image, name, description, gender } = await req.json();
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    }
+
+    if (gender && !["MALE", "FEMALE"].includes(gender)) {
+      return NextResponse.json(
+        { error: "Invalid gender value" },
+        { status: 400 },
+      );
     }
 
     const member = await prisma.classMember.create({
@@ -14,6 +21,7 @@ export async function POST(req: Request) {
         image,
         name,
         description,
+        gender,
       },
     });
 

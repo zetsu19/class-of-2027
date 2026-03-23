@@ -1,8 +1,7 @@
-// app/api/upload/route.ts
 import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export async function POST(req: Request) {
   try {

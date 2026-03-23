@@ -11,24 +11,47 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  MoreVertical,
+  Edit3,
+  Trash2,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Member = {
   id: string;
   name?: string;
   image?: string;
   description?: string;
+  gender?: "MALE" | "FEMALE";
   createdAt: string;
 };
 
 export default function ClassMembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
-  const [form, setForm] = useState({ name: "", description: "", image: "" });
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    image: "",
+    gender: "",
+  });
+
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -68,43 +91,99 @@ export default function ClassMembersPage() {
   };
 
   const handleConfirmEntry = async () => {
-    if (!form.name || !file) {
+    if (!form.name) {
+      setToast({ message: "Name is required!", type: "error" });
+      return;
+    }
+
+    if (!editingId && !file) {
       setToast({ message: "Name and Photo are required!", type: "error" });
       return;
     }
+
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      if (!uploadRes.ok) throw new Error();
-      const { url } = await uploadRes.json();
+      let imageUrl = form.image;
 
-      await fetch("/api/class-members", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, image: url }),
-      });
+      if (file) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) throw new Error();
+        const { url } = await uploadRes.json();
+        imageUrl = url;
+      }
 
-      setToast({
-        message: "You're on the wall, Class of '27!",
-        type: "success",
-      });
-      setForm({ name: "", description: "", image: "" });
+      if (editingId) {
+        await fetch(`/api/class-members/${editingId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...form,
+            image: imageUrl,
+            gender: form.gender || undefined,
+          }),
+        });
+        setToast({ message: "Entry updated!", type: "success" });
+      } else {
+        await fetch("/api/class-members", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...form,
+            image: imageUrl,
+            gender: form.gender || undefined,
+          }),
+        });
+        setToast({
+          message: "You're on the wall, Class of '27!",
+          type: "success",
+        });
+      }
+
+      setForm({ name: "", description: "", image: "", gender: "" });
       setFile(null);
       setPreview(null);
       setShowForm(false);
+      setEditingId(null);
       fetchMembers();
     } catch {
-      setToast({ message: "Upload failed. Try again!", type: "error" });
+      setToast({ message: "Save failed. Try again!", type: "error" });
     } finally {
       setLoading(false);
     }
   };
+  const handleDelete = async (id: string) => {
+    try {
+      await fetch(`/api/class-members/${id}`, {
+        method: "DELETE",
+      });
 
+      setMembers((prev) => prev.filter((m) => m.id !== id));
+
+      setToast({ message: "Deleted successfully", type: "success" });
+    } catch {
+      setToast({ message: "Delete failed", type: "error" });
+    }
+  };
+
+  const handleEdit = (member: Member) => {
+    setForm({
+      name: member.name || "",
+      description: member.description || "",
+      image: member.image || "",
+      gender: member.gender || "",
+    });
+
+    setPreview(member.image || null);
+    setShowForm(true);
+    setSelectedMember(null);
+
+    setEditingId(member.id);
+  };
   return (
     <>
       <style>{`
@@ -220,6 +299,7 @@ export default function ClassMembersPage() {
           font-family: 'Bebas Neue', sans-serif;
           font-size: clamp(5rem, 14vw, 10rem);
           line-height: 0.85;
+          letter-spacing: 0.02em;
           color: var(--ink);
         }
 
@@ -297,6 +377,107 @@ export default function ClassMembersPage() {
         .form-card { background: white; border: 3px solid var(--ink); padding: 2rem; box-shadow: 10px 10px 0 var(--rose); }
         .field-input { width: 100%; border: none; border-bottom: 3px solid var(--ink); padding: 0.75rem 0; font-family: inherit; font-weight: 700; outline: none; margin-bottom: 1.5rem; }
         .submit-btn { width: 100%; background: var(--ink); color: white; padding: 1rem; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+.modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5); /* dark semi-transparent background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: var(--cream);
+  padding: 2rem;
+  border: 3px solid var(--ink);
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+  box-shadow: 10px 10px 0 var(--ink);
+}
+
+.modal-card img {
+  max-width: 100%;
+  max-height: 70vh; /* so it doesn't overflow the screen */
+  object-fit: cover;
+  margin-bottom: 1rem;
+}
+
+.modal-card h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.modal-card p {
+  font-size: 0.9rem;
+  color: rgba(15,14,14,0.7);
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  cursor: pointer;
+}
+/* ── BRUTALIST DROPDOWN OVERRIDES ── */
+[data-radix-popper-content-wrapper] {
+  z-index: 150 !important;
+}
+
+.brutalist-menu-content {
+  background: var(--cream) !important;
+  border: 3px solid var(--ink) !important;
+  border-radius: 0 !important;
+  box-shadow: 5px 5px 0 var(--ink) !important;
+  min-width: 140px !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.brutalist-menu-item {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.2rem;
+  padding: 0.75rem 1rem !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
+  transition: all 0.1s ease;
+  color: var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+
+.brutalist-menu-item:last-child {
+  border-bottom: none;
+}
+
+.brutalist-menu-item:hover, 
+.brutalist-menu-item:focus {
+  background: var(--rose) !important;
+  color: white !important;
+  outline: none;
+}
+
+.brutalist-trigger {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--gold) !important;
+  border: 2px solid var(--ink) !important;
+  border-radius: 0 !important;
+  height: 32px !important;
+  width: 32px !important;
+  padding: 0 !important;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: all 0.1s;
+}
+
+.brutalist-trigger:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
       `}</style>
 
       <div className="page-root">
@@ -325,7 +506,26 @@ export default function ClassMembersPage() {
             {toast.message}
           </div>
         )}
+        {selectedMember && (
+          <div className="modal-bg" onClick={() => setSelectedMember(null)}>
+            <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+              <button
+                className="modal-close"
+                onClick={() => setSelectedMember(null)}
+              >
+                <X size={24} />
+              </button>
 
+              {selectedMember.image ? (
+                <img src={selectedMember.image} alt={selectedMember.name} />
+              ) : (
+                <User size={100} />
+              )}
+              <h2>{selectedMember.name}</h2>
+              <p>{selectedMember.description || "Living the dream."}</p>
+            </div>
+          </div>
+        )}
         <header>
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-black text-[#e8325a] font-bold text-[10px] uppercase tracking-widest mb-4">
@@ -342,7 +542,6 @@ export default function ClassMembersPage() {
             </button>
           )}
         </header>
-
         <main className="max-w-[1400px] mx-auto">
           <div className="flex flex-col lg:flex-row gap-12 items-start">
             {showForm && (
@@ -402,6 +601,17 @@ export default function ClassMembersPage() {
                       setForm({ ...form, description: e.target.value })
                     }
                   />
+                  <select
+                    className="field-input"
+                    value={form.gender}
+                    onChange={(e) =>
+                      setForm({ ...form, gender: e.target.value })
+                    }
+                  >
+                    <option value="">SELECT GENDER</option>
+                    <option value="MALE">MALE</option>
+                    <option value="FEMALE">FEMALE</option>
+                  </select>
 
                   <button
                     className="submit-btn"
@@ -444,8 +654,9 @@ export default function ClassMembersPage() {
                 members.map((m, i) => (
                   <div
                     key={m.id}
-                    className="member-card"
+                    className="member-card cursor-pointer"
                     style={{ animationDelay: `${i * 50}ms` }}
+                    onClick={() => setSelectedMember(m)}
                   >
                     <div className="card-img-wrap">
                       {m.image ? (
@@ -465,6 +676,31 @@ export default function ClassMembersPage() {
                         "{m.description || "Living the dream."}"
                       </p>
                     </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute top-2 right-2 h-10 w-10 z-30 !rounded-none border-3 !border-black !bg-[#f2c14e] !text-black p-0 hover:!bg-black hover:!text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-none"
+                        >
+                          <span className="text-xl font-black">...</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuItem onClick={() => handleEdit(m)}>
+                          <span>Edit Entry</span>
+                          <span className="ml-auto">→</span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => handleDelete(m.id)}
+                        >
+                          <span>Delete</span>
+                          <span className="ml-auto">×</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 ))
               )}
