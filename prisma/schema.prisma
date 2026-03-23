@@ -11,11 +11,18 @@ enum Gender {
   FEMALE
 }
 
+enum Role {
+  TEACHER
+  STUDENT
+}
+
 model ClassMember {
   id          String   @id @default(nanoid())
   image       String?
   name        String?
   description String?
   gender      Gender?
+  role        Role?
+  instagram   String?
   createdAt   DateTime @default(now())
 }
