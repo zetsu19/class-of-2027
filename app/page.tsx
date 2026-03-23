@@ -88,7 +88,7 @@ export default function LandingPage() {
                     </div>
 
                     <Link
-                      href="/members"
+                      href="/classMembers"
                       className="flex items-center gap-4 bg-[#e8325a] text-white border-4 border-[#0f0e0e] px-8 py-5 rounded-none font-bold uppercase tracking-widest shadow-[8px_8px_0px_0px_rgba(15,14,14,1)] hover:shadow-[4px_4px_0px_0px_rgba(15,14,14,1)] hover:translate-x-1 hover:translate-y-1 transition-all w-fit dm-sans"
                     >
                       Enter The Wall
