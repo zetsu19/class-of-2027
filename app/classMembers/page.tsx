@@ -9,6 +9,7 @@ import {
   X,
   Users,
   GraduationCap,
+  Instagram,
 } from "lucide-react";
 
 type Member = {
@@ -35,7 +36,14 @@ export default function StudentGalleryPage() {
       setFetching(true);
       const res = await fetch("/api/class-members");
       const data = await res.json();
-      setMembers(data);
+
+      const sortedData = [...data].sort((a, b) => {
+        if (a.role === "TEACHER" && b.role !== "TEACHER") return -1;
+        if (a.role !== "TEACHER" && b.role === "TEACHER") return 1;
+        return 0;
+      });
+
+      setMembers(sortedData);
     } catch (err) {
       console.error("Archive Error:", err);
     } finally {
@@ -143,7 +151,6 @@ export default function StudentGalleryPage() {
         </div>
       )}
 
-      {/* --- DETAIL MODAL --- */}
       {selectedMember && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0f0e0e]/90 backdrop-blur-md animate-in fade-in duration-300"
@@ -165,7 +172,6 @@ export default function StudentGalleryPage() {
             </button>
 
             <div className="flex flex-col md:flex-row gap-8 items-center md:items-start relative z-10">
-              {/* Profile Image */}
               <div className="w-64 h-80 bg-[#0f0e0e] border-4 border-[#0f0e0e] overflow-hidden shrink-0 shadow-[8px_8px_0px_0px_rgba(15,14,14,0.2)]">
                 {selectedMember.image ? (
                   <img
@@ -179,8 +185,6 @@ export default function StudentGalleryPage() {
                   </div>
                 )}
               </div>
-
-              {/* Info Area */}
               <div className="flex-1 text-center md:text-left min-w-0">
                 <div className="bebas text-2xl text-[#e8325a] mb-2 tracking-widest uppercase flex items-center justify-center md:justify-start gap-2">
                   {selectedMember.role === "TEACHER" && (
@@ -188,8 +192,6 @@ export default function StudentGalleryPage() {
                   )}
                   {selectedMember.role || "Member"}
                 </div>
-
-                {/* FIXED NAME BOX: Changed leading and added break-words */}
                 <h2 className="bebas text-6xl md:text-8xl text-[#0f0e0e] leading-[0.9] mb-6 uppercase break-words overflow-visible">
                   {selectedMember.name}
                 </h2>
@@ -198,10 +200,22 @@ export default function StudentGalleryPage() {
                   "{selectedMember.description || "Living the dream."}"
                 </p>
 
-                <div className="mt-8 pt-6 border-t-4 border-[#0f0e0e] inline-block">
-                  <span className="bebas text-3xl text-[#0f0e0e]">
-                    CLASS OF 2027
-                  </span>
+                <div className="mt-8 flex items-center justify-center md:justify-start gap-6">
+                  <div className="pt-6 border-t-4 border-[#0f0e0e] inline-block">
+                    <span className="bebas text-3xl text-[#0f0e0e]">
+                      CLASS OF 2027
+                    </span>
+                  </div>
+                  {selectedMember.instagram && (
+                    <a
+                      href={selectedMember.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-6 bg-[#0f0e0e] text-white p-3 border-4 border-[#0f0e0e] rounded-full hover:bg-[#e8325a] hover:scale-110 transition-all duration-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]"
+                    >
+                      <Instagram size={24} />
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
@@ -288,6 +302,18 @@ export default function StudentGalleryPage() {
                     )}
                     {member.role || "Member"}
                   </div>
+
+                  {member.instagram && (
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(member.instagram, "_blank");
+                      }}
+                      className="absolute bottom-4 right-4 bg-[#0f0e0e] text-white p-2.5 border-4 border-[#0f0e0e] rounded-full hover:bg-[#e8325a] hover:scale-110 transition-all duration-300 z-20 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]"
+                    >
+                      <Instagram size={20} />
+                    </div>
+                  )}
                 </div>
                 <div className="p-6 bg-white">
                   <h3 className="bebas text-4xl text-[#0f0e0e] leading-none mb-2 truncate">

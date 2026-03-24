@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { image, name, description, gender } = await req.json();
+    const { image, name, description, gender, instagram } = await req.json();
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -22,6 +22,7 @@ export async function POST(req: Request) {
         name,
         description,
         gender,
+        instagram,
       },
     });
 
